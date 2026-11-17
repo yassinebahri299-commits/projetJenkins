@@ -5,12 +5,11 @@ pipeline {
         timestamps()
     }
 
-   environment {
-    DOCKERHUB_USER = 'yassinebahri'
-    IMAGE_NAME     = 'my-website'
-    "C:\\Users\\octanet\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin;${env.PATH}"
- }
-    
+    environment {
+        DOCKERHUB_USER = 'yassinebahri'
+        IMAGE_NAME     = 'my-website'
+        PATH = "C:\\Users\\octanet\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin;${env.PATH}"
+    }
 
     stages {
         stage('Checkout') {
