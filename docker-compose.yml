@@ -1,0 +1,6 @@
+services:
+  web:
+    image: yassinebahri/my-website:latest
+    ports:
+      - "8081:80"
+    restart: unless-stopped
