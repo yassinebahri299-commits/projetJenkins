@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
 
@@ -6,44 +5,50 @@ pipeline {
         timestamps()
     }
 
+    environment {
+        DOCKERHUB_USER = 'yassinebahri'
+        IMAGE_NAME     = 'my-website'
+    }
+
     stages {
-        stage('Cloner le dépôt') {
+        stage('Checkout') {
             steps {
                 git url: 'https://github.com/yassinebahri299-commits/projetJenkins.git',
                     branch: 'main'
             }
         }
 
-        stage('Étape 1 : Vérification du dépôt') {
+        stage('Build') {
             steps {
-                bat 'echo === Étape 1 : Vérification du dépôt ==='
-                bat '"C:/Users/octanet/scoop/apps/git/current/cmd/git.exe" status'
+                bat 'docker build -t %DOCKERHUB_USER%/%IMAGE_NAME%:latest .'
             }
         }
 
-        stage('Étape 2 : Afficher le contenu du projet') {
+        stage('Smoke Test') {
             steps {
-                bat 'echo === Étape 2 : Afficher le contenu du projet ==='
-                bat 'dir'
+                bat 'docker rm -f smoke-test 2>nul & exit /b 0'
+                bat 'docker run -d --name smoke-test -p 8082:80 %DOCKERHUB_USER%/%IMAGE_NAME%:latest'
+                bat 'ping -n 6 127.0.0.1 >nul'
+                bat 'curl -f -s -o NUL http://localhost:8082'
             }
         }
 
-        stage('Étape 3 : Simuler un déploiement local') {
+        stage('Push to Docker Hub') {
             steps {
-                bat 'echo === Étape 3 : Simuler un déploiement local ==='
-                bat 'echo Le fichier index.html est prêt à être affiché'
-            }
-        }
-
-        stage('Étape 4 : Fin du build') {
-            steps {
-                bat 'echo === Étape 4 : Fin du build ==='
-                bat 'echo SUCCESS'
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds',
+                                                  usernameVariable: 'DH_USER',
+                                                  passwordVariable: 'DH_PASS')]) {
+                    bat 'echo %DH_PASS%| docker login -u %DH_USER% --password-stdin'
+                    bat 'docker push %DOCKERHUB_USER%/%IMAGE_NAME%:latest'
+                }
             }
         }
     }
 
     post {
+        always {
+            bat 'docker rm -f smoke-test 2>nul & exit /b 0'
+        }
         success {
             echo 'Build OK'
         }
